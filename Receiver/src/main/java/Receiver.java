@@ -3,14 +3,7 @@ import org.apache.activemq.ActiveMQConnectionFactory;
 import javax.jms.*;
 
 
-/**
- * @program: activemq_01
- * @ClassName Receiver
- * @description: 消息接收
- * @author: muxiaonong
- * @create: 2020-10-02 13:01
- * @Version 1.0
- **/
+
 public class Receiver {
 
     public static void main(String[] args) throws Exception{
@@ -34,9 +27,16 @@ public class Receiver {
         // 5 获取消息
         MessageConsumer consumer = session.createConsumer(queue);
 
-        while(true){
-            TextMessage message = (TextMessage)consumer.receive();
-            System.out.println("message："+message.getText());
+        //设定时间为三秒
+        long check=System.currentTimeMillis();
+        while(System.currentTimeMillis()-check>3) {
+            TextMessage message = (TextMessage) consumer.receive();
+            System.out.println("message：" + message.getText());
+            if (message.equals("hello")) {
+                check = System.currentTimeMillis();
+            } else {
+                System.out.println("message：" + message.getText());
+            }
         }
 
     }

@@ -1,14 +1,7 @@
 import org.apache.activemq.ActiveMQConnectionFactory;
 import javax.jms.*;
 
-/**
- * @program: activemq_01
- * @ClassName Sender
- * @description: 消息发送
- * @author: muxiaonong
- * @create: 2020-10-02 13:01
- * @Version 1.0
- **/
+
 public class Sender {
 
     public static void main(String[] args) throws Exception{
@@ -29,6 +22,13 @@ public class Sender {
 
         // 5.1 消息创建者
         MessageProducer producer = session.createProducer(queue);
+
+
+
+        //watchdog开启
+        Watchdog wdSdr=new Watchdog();
+        wdSdr.startSenderWatchdog(session, producer);
+
 
         // consumer --> 消费者
         // producer --> 创建者
