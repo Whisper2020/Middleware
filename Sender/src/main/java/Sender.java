@@ -1,49 +1,84 @@
 import org.apache.activemq.ActiveMQConnectionFactory;
 import javax.jms.*;
+import java.sql.Time;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.Scanner;
 
 
 public class Sender {
 
+    private final static String brokerURL = "tcp://localhost:61616";
+    private final static String prompt = String.join("\n",
+            "--- Welcome to Lab1: Chatroom ---",
+            "|1. Chat with a target			|",
+            "|2. Send broadcast message		|",
+            "|3. File transfer				|",
+            "|4. Quit						|",
+            "---------------------------------");
+    public static String aIdentifier = "";
+    public static Scanner input = null;
     public static void main(String[] args) throws Exception{
-        // 1. 获取连接工厂
         ActiveMQConnectionFactory factory = new ActiveMQConnectionFactory(
                 ActiveMQConnectionFactory.DEFAULT_USER,
                 ActiveMQConnectionFactory.DEFAULT_PASSWORD,
-                "tcp://localhost:61616"
+                brokerURL
         );
 
-        // 2. 获取一个向activeMq的连接
         Connection connection = factory.createConnection();
-        // 3. 获取session
         Session session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
 
-        // 4.找目的地，获取destination，消费端，也会从这个目的地取消息
-        Queue queue = session.createQueue("user");
-
-        // 5.1 消息创建者
-        MessageProducer producer = session.createProducer(queue);
-
-
-
-        //watchdog开启
-        Watchdog wdSdr=new Watchdog();
-        wdSdr.startSenderWatchdog(session, producer);
-
-
-        // consumer --> 消费者
-        // producer --> 创建者
-        // 5.2. 创建消息
-        for (int i = 0; i < 100; i++) {
-            TextMessage textMessage = session.createTextMessage("hi："+i);
-            // 5.3 向目的地写入消息
-            producer.send(textMessage);
-            Thread.sleep(1000);
+        System.out.println("成功连接中间件ActiveMQ Broker@" + brokerURL);
+        input = new Scanner(System.in);
+        System.out.println("输入本机标识：");
+        aIdentifier = input.next();
+        boolean sym = true;
+        while (sym) {
+            System.out.println(prompt);
+            switch (input.nextInt()) {
+                case 1:
+                    chat(session, false);break;
+                case 2:
+                    chat(session, true);break;
+                case 3:
+                    break;//sendFile();break;
+                case 4:
+                    sym = false;
+                    break;
+            }
         }
 
-        // 6.关闭连接
+/*
+        //watchdog开启
+        Watchdog wdSdr=new Watchdog();
+        wdSdr.startSenderWatchdog(session, session.createProducer(session.createQueue("Watchdog")));
+*/
         connection.close();
-
-        System.out.println("结束。。。。。");
-
+        System.out.println("Bye.");
+    }
+    public static void chat(Session session, boolean broadcast) {
+        String aTarget = "", msg = "";
+        int i = 0;
+        try {
+            Topic topic = session.createTopic("Message");
+            MessageProducer producer = null;
+            producer = session.createProducer(topic);
+            if (!broadcast) {
+                System.out.println("Input target ID:");
+                aTarget = input.next();
+            } else {
+                aTarget = "ALL";
+            }
+            while (!(msg = input.next()).equals("OVER")) {
+                i++;
+                TextMessage textMessage = session.createTextMessage(msg);
+                textMessage.setStringProperty("TO", aTarget);
+                textMessage.setStringProperty("FROM", aIdentifier);
+                producer.send(textMessage);
+                System.out.printf("[%d]Sent @%s%n", i, new SimpleDateFormat("MM/dd HH:mm:ss").format(new Date()));
+            }
+        } catch (JMSException e) {
+            e.printStackTrace();
+        }
     }
 }

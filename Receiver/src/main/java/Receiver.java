@@ -3,7 +3,6 @@ import org.apache.activemq.ActiveMQConnectionFactory;
 import javax.jms.*;
 
 
-
 public class Receiver {
 
     public static void main(String[] args) throws Exception{
@@ -22,21 +21,16 @@ public class Receiver {
         Session session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
 
         // 4.找目的地，获取destination，消费端，也会从这个目的地取消息
-        Destination queue = session.createQueue("user");
+        Destination topic = session.createTopic("Message");
 
         // 5 获取消息
-        MessageConsumer consumer = session.createConsumer(queue);
+        MessageConsumer consumer = session.createConsumer(topic);
 
-        //设定时间为三秒
-        long check=System.currentTimeMillis();
-        while(System.currentTimeMillis()-check>3) {
-            TextMessage message = (TextMessage) consumer.receive();
-            System.out.println("message：" + message.getText());
-            if (message.equals("hello")) {
-                check = System.currentTimeMillis();
-            } else {
-                System.out.println("message：" + message.getText());
-            }
+        while(true){
+            TextMessage message = (TextMessage)consumer.receive();
+            System.out.println("message："+message.getText());
+            System.out.println("发送id"+message.getJMSMessageID());
+
         }
 
     }
